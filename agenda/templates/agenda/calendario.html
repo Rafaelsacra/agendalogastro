@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+</head>
+<body>
+  <div id='calendar'></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var calendarEl = document.getElementById('calendar');
+      var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek',
+        initialDate: '{{ hoje|date:"Y-m-d" }}',
+        events: {
+          url: '{% url "eventos_json" %}',
+          method: 'GET',
+          failure: function() {
+            alert('Erro ao carregar eventos!');
+          }
+        },
+        locale: 'pt-br',
+        businessHours: {
+          daysOfWeek: [1, 2, 3, 4, 5, 6], // Segunda a sábado
+          startTime: '07:00',
+          endTime: '19:00',
+        },
+        slotMinTime: '07:00:00',
+        slotMaxTime: '19:00:00',
+        hiddenDays: [0], // Esconde domingos
+        eventDidMount: function(info) {
+          var tooltip = document.createElement('div');
+          tooltip.innerHTML = info.event.extendedProps.fornecedor;
+          tooltip.style.position = 'absolute';
+          tooltip.style.background = '#333';
+          tooltip.style.color = '#fff';
+          tooltip.style.padding = '4px 8px';
+          tooltip.style.borderRadius = '4px';
+          tooltip.style.fontSize = '12px';
+          tooltip.style.display = 'none';
+          tooltip.style.zIndex = 1000;
+          document.body.appendChild(tooltip);
+
+          info.el.addEventListener('mouseenter', function(e) {
+            tooltip.style.display = 'block';
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+          });
+          info.el.addEventListener('mousemove', function(e) {
+            tooltip.style.left = e.pageX + 10 + 'px';
+            tooltip.style.top = e.pageY + 10 + 'px';
+          });
+          info.el.addEventListener('mouseleave', function() {
+            tooltip.style.display = 'none';
+          });
+        }
+      });
+      calendar.render();
+
+      // Atualiza os eventos a cada 1 minuto
+      setInterval(function() {
+        calendar.refetchEvents();
+      }, 60000);
+    });
+  </script>
+</body>
+</html> 
