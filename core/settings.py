@@ -122,3 +122,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configurações do Celery
+CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Altere se usar outro broker
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'importar-agendamentos-cada-minuto': {
+        'task': 'agenda.tasks.importar_agendamentos_task',
+        'schedule': 60.0,  # a cada 60 segundos
+    },
+}
