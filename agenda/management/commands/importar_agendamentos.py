@@ -7,13 +7,15 @@ from datetime import datetime
 
 # Configurações
 CREDENTIALS_PATH = 'core/credentials.json'
-SPREADSHEET_ID = '1yCTOYYT5ExGUnOkjZrDzqLUoeJjLhVxHGx4RA2sIG5k'
-SHEET_NAME = 'Cópia de AGENDA'  # Nome exato da aba
+SPREADSHEET_ID = '1Jocq3vX6YDoJ0NJ4UAYWkePfu1txB7hflH8gIxcQf0k'
+SHEET_NAME = 'AGENDA'  # Nome exato da aba
 
 class Command(BaseCommand):
     help = 'Importa agendamentos do Google Sheets para o banco de dados'
 
     def handle(self, *args, **options):
+        # Limpa todos os agendamentos antes de importar
+        Agendamento.objects.all().delete()
         # Autenticação
         scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
         creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=scopes)

@@ -23,10 +23,7 @@ def calendario_semanal(request):
 def calendario(request):
     hoje = date.today()
     agendamentos = Agendamento.objects.all()
-    cores = [
-        '#1abc9c', '#3498db', '#9b59b6', '#e67e22', '#e74c3c', '#34495e', '#f1c40f', '#2ecc71', '#7f8c8d', '#fd79a8',
-        '#00b894', '#fdcb6e', '#0984e3', '#6c5ce7', '#d35400', '#c0392b', '#8e44ad', '#16a085', '#27ae60', '#f39c12'
-    ]
+    cores = ['#F26522', '#0054A6', '#757778']  # Laranja, Azul, Cinza Médio
     eventos = []
     for idx, a in enumerate(agendamentos):
         eventos.append({
@@ -41,10 +38,7 @@ def calendario(request):
 
 def eventos_json(request):
     agendamentos = Agendamento.objects.all()
-    cores = [
-        '#1abc9c', '#3498db', '#9b59b6', '#e67e22', '#e74c3c', '#34495e', '#f1c40f', '#2ecc71', '#7f8c8d', '#fd79a8',
-        '#00b894', '#fdcb6e', '#0984e3', '#6c5ce7', '#d35400', '#c0392b', '#8e44ad', '#16a085', '#27ae60', '#f39c12'
-    ]
+    cores = ['#F26522', '#0054A6', '#757778']  # Laranja, Azul, Cinza Médio
     eventos = []
     for idx, a in enumerate(agendamentos):
         eventos.append({
