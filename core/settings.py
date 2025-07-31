@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-qz9k0vxf3+2e)1#h2rq=d_sw8l)87w8a^2#40t@0k%(d#=%hy3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '110eb7625479.ngrok-free.app',
+]
 
 
 # Application definition
@@ -124,13 +128,49 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Configurações do Celery
-CELERY_BROKER_URL = 'redis://localhost:6379/0'  # Altere se usar outro broker
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'memory://'
+CELERY_RESULT_BACKEND = 'rpc://'
+
+# Configurações adicionais do Celery para melhor estabilidade
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TIMEZONE = 'UTC'
+CELERY_ENABLE_UTC = True
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutos
 
 from celery.schedules import crontab
+
 CELERY_BEAT_SCHEDULE = {
     'importar-agendamentos-cada-minuto': {
         'task': 'agenda.tasks.importar_agendamentos_task',
         'schedule': 60.0,  # a cada 60 segundos
+    },
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',  # Troque para 'DEBUG' se quiser mais detalhes
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'agenda': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
