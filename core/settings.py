@@ -28,7 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '110eb7625479.ngrok-free.app',
+    '68e492364177.ngrok-free.app',
 ]
 
 
@@ -143,11 +143,19 @@ CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutos
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
-    'importar-agendamentos-cada-minuto': {
+    'importar-agendamentos-a-cada-5-minutos': {
         'task': 'agenda.tasks.importar_agendamentos_task',
-        'schedule': 60.0,  # a cada 60 segundos
+        'schedule': crontab(minute='*/5'),
     },
 }
+#from celery.schedules import crontab
+
+#CELERY_BEAT_SCHEDULE = {
+ #   'importar-agendamentos-cada-minuto': {
+ #       'task': 'agenda.tasks.importar_agendamentos_task',
+ ##       'schedule': 60.0,  # a cada 60 segundos
+ #   },
+#}
 
 LOGGING = {
     'version': 1,
