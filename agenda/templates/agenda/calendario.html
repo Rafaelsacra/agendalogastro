@@ -3,9 +3,79 @@
 <head>
   <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+  <style>
+    .status-bar {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-family: Arial, sans-serif;
+    }
+    .status-item {
+      display: inline-block;
+      margin-right: 20px;
+      font-size: 14px;
+    }
+    .status-label {
+      font-weight: bold;
+      color: #495057;
+    }
+    .status-value {
+      color: #6c757d;
+    }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #28a745;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 10000;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    .auto-refresh-indicator {
+      background: #17a2b8;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+  </style>
 </head>
 <body>
+  <!-- Barra de status -->
+  <div class="status-bar">
+    <div class="status-item">
+      <span class="status-label">Status:</span>
+      <span class="status-value" id="status">Carregando...</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Total de Agendamentos:</span>
+      <span class="status-value" id="total-agendamentos">-</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Auto-refresh:</span>
+      <span class="auto-refresh-indicator">Ativo (3 min)</span>
+    </div>
+  </div>
+
   <div id='calendar'></div>
+
+  <!-- Notificação de atualização -->
+  <div id="notification" class="notification">
+    <strong>🔄 Atualização Automática</strong><br>
+    Novos agendamentos foram importados!
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       var calendarEl = document.getElementById('calendar');
@@ -57,10 +127,58 @@
       });
       calendar.render();
 
-      // Atualiza os eventos a cada 1 minuto
+      // Variáveis para controle de atualizações
+      var ultimoTotalAgendamentos = 0;
+      
+
+      // Função para atualizar status
+      function atualizarStatus() {
+        fetch('{% url "verificar_atualizacoes" %}')
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById('total-agendamentos').textContent = data.total_agendamentos;
+            
+            // Verifica se houve mudança no total de agendamentos
+            if (ultimoTotalAgendamentos > 0 && data.total_agendamentos > ultimoTotalAgendamentos) {
+              mostrarNotificacao();
+            }
+            
+            ultimoTotalAgendamentos = data.total_agendamentos;
+            
+            document.getElementById('status').textContent = 'Ativo';
+            document.getElementById('status').style.color = '#28a745';
+          })
+          .catch(error => {
+            console.error('Erro ao verificar status:', error);
+            document.getElementById('status').textContent = 'Erro de conexão';
+            document.getElementById('status').style.color = '#dc3545';
+          });
+      }
+
+      // Função para mostrar notificação
+      function mostrarNotificacao() {
+        var notification = document.getElementById('notification');
+        notification.style.display = 'block';
+        
+        // Esconde a notificação após 5 segundos
+        setTimeout(function() {
+          notification.style.display = 'none';
+        }, 5000);
+      }
+
+      // Atualiza status imediatamente
+      atualizarStatus();
+
+      // Atualiza status e eventos a cada 3 minutos
       setInterval(function() {
+        atualizarStatus();
         calendar.refetchEvents();
-      }, 60000);
+      }, 180000);
+
+      // Atualiza status a cada 30 segundos para feedback mais responsivo
+      setInterval(function() {
+        atualizarStatus();
+      }, 30000);
     });
   </script>
 </body>

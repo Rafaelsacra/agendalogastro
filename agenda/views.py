@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from .models import Agendamento
 from django.shortcuts import render
 from django.http import HttpResponse
@@ -50,3 +50,17 @@ def eventos_json(request):
             }
         })
     return JsonResponse(eventos, safe=False)
+
+def verificar_atualizacoes(request):
+    """View para verificar se houve atualizações recentes"""
+    from django.core.cache import cache
+    from django.http import JsonResponse
+    
+    ultima_importacao = cache.get('ultima_importacao')
+    total_agendamentos = Agendamento.objects.count()
+    
+    return JsonResponse({
+        'ultima_importacao': ultima_importacao,
+        'total_agendamentos': total_agendamentos,
+        'timestamp': datetime.now().isoformat()
+    })

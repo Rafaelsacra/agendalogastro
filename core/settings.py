@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '68e492364177.ngrok-free.app',
+    '8de704f9ff2b.ngrok-free.app'
 ]
 
 
@@ -127,9 +128,18 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configurações do Celery
-CELERY_BROKER_URL = 'memory://'
-CELERY_RESULT_BACKEND = 'rpc://'
+# Configuração de Cache
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
+# Configurações do Celery (Redis como broker/backend)
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 
 # Configurações adicionais do Celery para melhor estabilidade
 CELERY_TASK_SERIALIZER = 'json'
@@ -140,12 +150,20 @@ CELERY_ENABLE_UTC = True
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutos
 
+# Configurações para garantir que as tarefas sejam executadas
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+CELERY_WORKER_DISABLE_RATE_LIMITS = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
-    'importar-agendamentos-a-cada-5-minutos': {
+    'importar-agendamentos-a-cada-3-minutos': {
         'task': 'agenda.tasks.importar_agendamentos_task',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute='*/3'),  # A cada 3 minutos
     },
 }
 #from celery.schedules import crontab
