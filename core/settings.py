@@ -29,7 +29,8 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '8de704f9ff2b.ngrok-free.app'
+    ".ngrok-free.app",
+    '.trycloudflare.com'
 ]
 
 
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'agenda',
+    # 'django_celery_beat',  # Temporarily commented - install with proxy
 ]
 
 MIDDLEWARE = [

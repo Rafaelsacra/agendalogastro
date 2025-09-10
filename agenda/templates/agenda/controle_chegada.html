@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Chegada - Portaria/Recebimento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            font-size: 0.9em;
+            padding: 0.4em 0.8em;
+        }
+        .agendamento-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid #007bff;
+        }
+        .agendamento-card.pendente {
+            border-left-color: #ffc107;
+        }
+        .agendamento-card.processado {
+            border-left-color: #28a745;
+        }
+        .agendamento-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .hora-atual {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .status-pontual {
+            color: #28a745;
+        }
+        .status-atrasado {
+            color: #dc3545;
+        }
+        .status-adiantado {
+            color: #ffc107;
+        }
+        .status-nao-compareceu {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Controle de Chegada - {{ hoje|date:"d/m/Y" }}
+                    </h1>
+                    <div class="hora-atual" id="hora-atual"></div>
+                </div>
+
+                <!-- Mensagens -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Resumo -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-primary text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">{{ agendamentos_hoje.count }}</h5>
+                                <p class="card-text">Total Hoje</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">{{ agendamentos_pendentes.count }}</h5>
+                                <p class="card-text">Pendentes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">{{ agendamentos_processados.count }}</h5>
+                                <p class="card-text">Processados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title" id="taxa-conversao">
+                                    {% if agendamentos_hoje.count > 0 %}
+                                        {{ agendamentos_processados.count|floatformat:0 }}/{{ agendamentos_hoje.count }}
+                                    {% else %}
+                                        0/0
+                                    {% endif %}
+                                </h5>
+                                <p class="card-text">Taxa</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agendamentos Pendentes -->
+                <div class="row">
+                    <div class="col-12">
+                        <h4 class="mb-3">
+                            <i class="fas fa-clock me-2 text-warning"></i>
+                            Agendamentos Pendentes ({{ agendamentos_pendentes.count }})
+                        </h4>
+                        
+                        {% if agendamentos_pendentes %}
+                            <div class="row">
+                                {% for agendamento in agendamentos_pendentes %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card agendamento-card pendente">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-0">{{ agendamento.fornecedor }}</h6>
+                                                    <span class="badge bg-warning">Pendente</span>
+                                                </div>
+                                                <p class="card-text text-muted mb-2">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    {{ agendamento.data|date:"d/m/Y" }}
+                                                    <i class="fas fa-clock ms-2 me-1"></i>
+                                                    {{ agendamento.horario_agendado|time:"H:i" }}
+                                                </p>
+                                                <p class="card-text">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-box me-1"></i>
+                                                        {{ agendamento.quantidade_volumes }} volumes
+                                                        {% if agendamento.nota_fiscal %}
+                                                            | NF: {{ agendamento.nota_fiscal }}
+                                                        {% endif %}
+                                                    </small>
+                                                </p>
+                                                <div class="d-grid gap-2">
+                                                    <button class="btn btn-primary btn-sm" onclick="registrarChegada({{ agendamento.id }})">
+                                                        <i class="fas fa-check me-1"></i>
+                                                        Registrar Chegada
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Nenhum agendamento pendente para hoje.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Agendamentos Processados -->
+                {% if agendamentos_processados %}
+                    <div class="row mt-5">
+                        <div class="col-12">
+                            <h4 class="mb-3">
+                                <i class="fas fa-check-circle me-2 text-success"></i>
+                                Agendamentos Processados ({{ agendamentos_processados.count }})
+                            </h4>
+                            
+                            <div class="row">
+                                {% for agendamento in agendamentos_processados %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <div class="card agendamento-card processado">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-0">{{ agendamento.fornecedor }}</h6>
+                                                    <span class="badge bg-success">Processado</span>
+                                                </div>
+                                                <p class="card-text text-muted mb-2">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    {{ agendamento.data|date:"d/m/Y" }}
+                                                    <i class="fas fa-clock ms-2 me-1"></i>
+                                                    {{ agendamento.horario_agendado|time:"H:i" }}
+                                                </p>
+                                                {% if agendamento.hora_entrada_real %}
+                                                    <p class="card-text">
+                                                        <i class="fas fa-sign-in-alt me-1"></i>
+                                                        Chegou às: {{ agendamento.hora_entrada_real|time:"H:i" }}
+                                                    </p>
+                                                {% endif %}
+                                                <p class="card-text">
+                                                    <span class="badge status-badge 
+                                                        {% if agendamento.status_pontualidade == 'Pontual' %}bg-success
+                                                        {% elif agendamento.status_pontualidade == 'Atrasado' %}bg-danger
+                                                        {% elif agendamento.status_pontualidade == 'Adiantado' %}bg-warning
+                                                        {% else %}bg-secondary{% endif %}">
+                                                        {{ agendamento.status_pontualidade_display }}
+                                                    </span>
+                                                </p>
+                                                {% if agendamento.observacoes %}
+                                                    <p class="card-text">
+                                                        <small class="text-muted">
+                                                            <i class="fas fa-comment me-1"></i>
+                                                            {{ agendamento.observacoes }}
+                                                        </small>
+                                                    </p>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Registrar Chegada -->
+    <div class="modal fade" id="modalRegistrarChegada" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Chegada</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formRegistrarChegada">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Fornecedor chegou?</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="compareceu" name="compareceu">
+                                <label class="form-check-label" for="compareceu">
+                                    Sim, o fornecedor chegou
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="divHoraEntrada" style="display: none;">
+                            <label for="hora_entrada_real" class="form-label">Hora real de entrada (HH:MM)</label>
+                            <input type="time" class="form-control" id="hora_entrada_real" name="hora_entrada_real">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações adicionais (opcional)</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" rows="3"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Registrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let agendamentoId = null;
+        
+        // Atualizar hora atual
+        function atualizarHora() {
+            const agora = new Date();
+            const hora = agora.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('hora-atual').textContent = hora;
+        }
+        
+        // Atualizar hora a cada segundo
+        setInterval(atualizarHora, 1000);
+        atualizarHora();
+        
+        // Mostrar/ocultar campo de hora baseado no checkbox
+        document.getElementById('compareceu').addEventListener('change', function() {
+            const divHora = document.getElementById('divHoraEntrada');
+            if (this.checked) {
+                divHora.style.display = 'block';
+                // Definir hora atual como padrão
+                const agora = new Date();
+                const horaAtual = agora.toTimeString().slice(0, 5);
+                document.getElementById('hora_entrada_real').value = horaAtual;
+            } else {
+                divHora.style.display = 'none';
+                document.getElementById('hora_entrada_real').value = '';
+            }
+        });
+        
+        // Função para abrir modal de registrar chegada
+        function registrarChegada(id) {
+            agendamentoId = id;
+            document.getElementById('formRegistrarChegada').reset();
+            document.getElementById('divHoraEntrada').style.display = 'none';
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalRegistrarChegada'));
+            modal.show();
+        }
+        
+        // Submeter formulário
+        document.getElementById('formRegistrarChegada').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                compareceu: formData.get('compareceu') === 'on',
+                hora_entrada_real: formData.get('hora_entrada_real'),
+                observacoes: formData.get('observacoes')
+            };
+            
+            fetch(`/agenda/api/registrar-chegada/${agendamentoId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Fechar modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalRegistrarChegada'));
+                    modal.hide();
+                    
+                    // Recarregar página para mostrar atualizações
+                    location.reload();
+                } else {
+                    alert('Erro: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                alert('Erro ao registrar chegada');
+            });
+        });
+        
+        // Função para obter CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        
+        // Auto-refresh a cada 30 segundos
+        setInterval(function() {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>
+

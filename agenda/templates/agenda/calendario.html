@@ -66,6 +66,11 @@
       <span class="status-label">Auto-refresh:</span>
       <span class="auto-refresh-indicator">Ativo (3 min)</span>
     </div>
+    <div class="status-item">
+      <a href="/agenda/controle-chegada/" style="color: #007bff; text-decoration: none; font-weight: bold;">
+        <i class="fas fa-clock me-1"></i>Controle de Chegada
+      </a>
+    </div>
   </div>
 
   <div id='calendar'></div>
@@ -100,15 +105,32 @@
         hiddenDays: [0], // Esconde domingos
         eventDidMount: function(info) {
           var tooltip = document.createElement('div');
-          tooltip.innerHTML = info.event.extendedProps.fornecedor;
+          var props = info.event.extendedProps;
+          var tooltipContent = '<strong>' + props.fornecedor + '</strong>';
+          
+          if (props.compareceu) {
+            tooltipContent += '<br>' + props.status_pontualidade;
+            if (props.hora_entrada_real) {
+              tooltipContent += '<br>Chegou às: ' + props.hora_entrada_real;
+            }
+            if (props.observacoes) {
+              tooltipContent += '<br>Obs: ' + props.observacoes;
+            }
+          } else {
+            tooltipContent += '<br><span style="color: #ffc107;">Pendente</span>';
+          }
+          
+          tooltip.innerHTML = tooltipContent;
           tooltip.style.position = 'absolute';
           tooltip.style.background = '#333';
           tooltip.style.color = '#fff';
-          tooltip.style.padding = '4px 8px';
-          tooltip.style.borderRadius = '4px';
+          tooltip.style.padding = '8px 12px';
+          tooltip.style.borderRadius = '6px';
           tooltip.style.fontSize = '12px';
           tooltip.style.display = 'none';
           tooltip.style.zIndex = 1000;
+          tooltip.style.maxWidth = '250px';
+          tooltip.style.lineHeight = '1.4';
           document.body.appendChild(tooltip);
 
           info.el.addEventListener('mouseenter', function(e) {
