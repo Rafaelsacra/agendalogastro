@@ -16,8 +16,13 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
+
+def redirect_to_calendario(request):
+    return redirect('agenda:calendario')
 
 urlpatterns = [
+    path('', redirect_to_calendario, name='home'),
     path('admin/', admin.site.urls),
-    path('agenda/', include('agenda.urls')),
+    path('agenda/', include('agenda.urls', namespace='agenda')),
 ]

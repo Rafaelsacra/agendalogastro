@@ -1,28 +1,30 @@
 {% extends "base.html" %}
-{% block title %}Registrar Chegada - {{ agendamento.fornecedor }}{% endblock %}
+{% block title %}Registrar Chegada - {{ representante.nome_representante }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
             <div class="card-header">
                 <h4 class="mb-0">
-                    <i class="fas fa-clock me-2"></i>
-                    Registrar Chegada do Fornecedor
+                    <i class="fas fa-user me-2"></i>
+                    Registrar Chegada do Representante
                 </h4>
             </div>
             <div class="card-body">
                 <!-- Informações do Agendamento -->
                 <div class="alert alert-info">
-                    <h5 class="mb-3">Informações do Agendamento</h5>
+                    <h5 class="mb-3">Informações da Visita</h5>
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Fornecedor:</strong> {{ agendamento.fornecedor }}</p>
-                            <p><strong>Data:</strong> {{ agendamento.data_agendada|date:"d/m/Y" }}</p>
+                            <p><strong>Representante:</strong> {{ representante.nome_representante }}</p>
+                            <p><strong>Fornecedor/Marca:</strong> {{ representante.fornecedor_marca }}</p>
+                            <p><strong>Data:</strong> {{ representante.data_agendada|date:"d/m/Y" }}</p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Horário Agendado:</strong> {{ agendamento.hora_agendada|time:"H:i" }}</p>
-                            {% if agendamento.observacoes %}
-                                <p><strong>Observações:</strong> {{ agendamento.observacoes }}</p>
+                            <p><strong>Horário Agendado:</strong> {{ representante.hora_agendada|time:"H:i" }}</p>
+                            <p><strong>Comprador Responsável:</strong> {{ representante.comprador_responsavel }}</p>
+                            {% if representante.observacoes %}
+                                <p><strong>Observações:</strong> {{ representante.observacoes }}</p>
                             {% endif %}
                         </div>
                     </div>
@@ -35,25 +37,25 @@
                     <div class="mb-4">
                         <label class="form-label fs-5">
                             <i class="fas fa-question-circle me-2"></i>
-                            Fornecedor chegou?
+                            Representante chegou?
                         </label>
                         <div class="form-check form-check-lg">
                             <input class="form-check-input" type="checkbox" id="compareceu" name="compareceu" 
-                                   {% if agendamento.compareceu %}checked{% endif %}>
+                                   {% if representante.compareceu %}checked{% endif %}>
                             <label class="form-check-label" for="compareceu">
-                                <strong>Sim, o fornecedor chegou</strong>
+                                <strong>Sim, o representante chegou</strong>
                             </label>
                         </div>
                     </div>
                     
-                    <div class="mb-4" id="divHoraEntrada" style="{% if not agendamento.compareceu %}display: none;{% endif %}">
+                    <div class="mb-4" id="divHoraEntrada" style="{% if not representante.compareceu %}display: none;{% endif %}">
                         <label for="hora_entrada_real" class="form-label fs-5">
                             <i class="fas fa-clock me-2"></i>
                             Hora real de entrada (HH:MM)
                         </label>
                         <input type="time" class="form-control form-control-lg" 
                                id="hora_entrada_real" name="hora_entrada_real"
-                               value="{% if agendamento.hora_entrada_real %}{{ agendamento.hora_entrada_real|time:"H:i" }}{% endif %}">
+                               value="{% if representante.hora_entrada_real %}{{ representante.hora_entrada_real|time:"H:i" }}{% endif %}">
                         <div class="form-text">
                             <i class="fas fa-info-circle me-1"></i>
                             Hora atual: <span id="hora-atual"></span>
@@ -66,19 +68,19 @@
                             Observações adicionais (opcional)
                         </label>
                         <textarea class="form-control" id="observacoes" name="observacoes" 
-                                  rows="4" placeholder="Digite observações sobre a chegada do fornecedor...">{% if agendamento.observacoes %}{{ agendamento.observacoes }}{% endif %}</textarea>
+                                  rows="4" placeholder="Digite observações sobre a chegada do representante...">{% if representante.observacoes %}{{ representante.observacoes }}{% endif %}</textarea>
                     </div>
 
                     <!-- Status de Pontualidade (se já processado) -->
-                    {% if agendamento.compareceu and agendamento.hora_entrada_real %}
+                    {% if representante.compareceu and representante.hora_entrada_real %}
                         <div class="alert alert-success">
                             <h6><i class="fas fa-info-circle me-2"></i>Status de Pontualidade</h6>
                             <span class="badge fs-6 
-                                {% if agendamento.status_pontualidade == 'Pontual' %}bg-success
-                                {% elif agendamento.status_pontualidade == 'Atrasado' %}bg-danger
-                                {% elif agendamento.status_pontualidade == 'Adiantado' %}bg-warning
+                                {% if representante.status_pontualidade == 'Pontual' %}bg-success
+                                {% elif representante.status_pontualidade == 'Atrasado' %}bg-danger
+                                {% elif representante.status_pontualidade == 'Adiantado' %}bg-warning
                                 {% else %}bg-secondary{% endif %}">
-                                {{ agendamento.status_pontualidade_display }}
+                                {{ representante.status_pontualidade_display }}
                             </span>
                         </div>
                     {% endif %}

@@ -1,207 +1,327 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
-  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
-  <style>
-    .status-bar {
-      background: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 5px;
-      padding: 10px;
-      margin-bottom: 20px;
-      font-family: Arial, sans-serif;
-    }
-    .status-item {
-      display: inline-block;
-      margin-right: 20px;
-      font-size: 14px;
-    }
-    .status-label {
-      font-weight: bold;
-      color: #495057;
-    }
-    .status-value {
-      color: #6c757d;
-    }
-    .notification {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #28a745;
-      color: white;
-      padding: 15px;
-      border-radius: 5px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      z-index: 10000;
-      display: none;
-      animation: slideIn 0.3s ease-out;
-    }
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    .auto-refresh-indicator {
-      background: #17a2b8;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 3px;
-      font-size: 12px;
-      margin-left: 10px;
-    }
-  </style>
-</head>
-<body>
-  <!-- Barra de status -->
-  <div class="status-bar">
-    <div class="status-item">
-      <span class="status-label">Status:</span>
-      <span class="status-value" id="status">Carregando...</span>
-    </div>
-    <div class="status-item">
-      <span class="status-label">Total de Agendamentos:</span>
-      <span class="status-value" id="total-agendamentos">-</span>
-    </div>
-    <div class="status-item">
-      <span class="status-label">Auto-refresh:</span>
-      <span class="auto-refresh-indicator">Ativo (3 min)</span>
-    </div>
-    <div class="status-item">
-      <a href="/agenda/controle-chegada/" style="color: #007bff; text-decoration: none; font-weight: bold;">
-        <i class="fas fa-clock me-1"></i>Controle de Chegada
-      </a>
+{% extends "base.html" %}
+{% block title %}Agenda - Calendário{% endblock %}
+{% block extra_css %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+<style>
+  .status-bar {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    padding: 10px;
+    margin-bottom: 20px;
+    font-family: Arial, sans-serif;
+  }
+  .status-item {
+    display: inline-block;
+    margin-right: 20px;
+    font-size: 14px;
+  }
+  .status-label {
+    font-weight: bold;
+    color: #495057;
+  }
+  .status-value {
+    color: #6c757d;
+  }
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    z-index: 10000;
+    display: none;
+    animation: slideIn 0.3s ease-out;
+  }
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .auto-refresh-indicator {
+    background: #17a2b8;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Barra de status -->
+<div class="status-bar">
+  <div class="status-item">
+    <span class="status-label">Status:</span>
+    <span class="status-value" id="status">Carregando...</span>
+  </div>
+  <div class="status-item">
+    <span class="status-label">Total de Agendamentos:</span>
+    <span class="status-value" id="total-agendamentos">-</span>
+  </div>
+  <div class="status-item">
+    <span class="status-label">Auto-refresh:</span>
+    <span class="auto-refresh-indicator">Ativo (3 min)</span>
+  </div>
+</div>
+
+<div id='calendar'></div>
+
+<!-- Notificação de atualização -->
+<div id="notification" class="notification">
+  <strong>🔄 Atualização Automática</strong><br>
+  Novos agendamentos foram importados!
+</div>
+
+<!-- Botão para criar agendamento de representante -->
+<div class="mb-3">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgendamentoRepresentante">
+    <i class="fas fa-user-plus me-2"></i>Agendar Visita de Representante
+  </button>
+</div>
+
+<!-- Modal para criar agendamento de representante -->
+<div class="modal fade" id="modalAgendamentoRepresentante" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Agendar Visita de Representante</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="formAgendamentoRepresentante">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nome_representante" class="form-label">Nome do Representante *</label>
+            <input type="text" class="form-control" id="nome_representante" name="nome_representante" required>
+          </div>
+          <div class="mb-3">
+            <label for="fornecedor_marca" class="form-label">Fornecedor/Marca *</label>
+            <input type="text" class="form-control" id="fornecedor_marca" name="fornecedor_marca" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="data_agendada" class="form-label">Data da Visita *</label>
+                <input type="date" class="form-control" id="data_agendada" name="data_agendada" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="hora_agendada" class="form-label">Horário da Visita *</label>
+                <input type="time" class="form-control" id="hora_agendada" name="hora_agendada" required>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="comprador_responsavel" class="form-label">Comprador Responsável *</label>
+            <input type="text" class="form-control" id="comprador_responsavel" name="comprador_responsavel" required>
+          </div>
+          <div class="mb-3">
+            <label for="observacoes" class="form-label">Observações (opcional)</label>
+            <textarea class="form-control" id="observacoes" name="observacoes" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Criar Agendamento</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
+{% endblock %}
 
-  <div id='calendar'></div>
-
-  <!-- Notificação de atualização -->
-  <div id="notification" class="notification">
-    <strong>🔄 Atualização Automática</strong><br>
-    Novos agendamentos foram importados!
-  </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      var calendarEl = document.getElementById('calendar');
-      var calendar = new FullCalendar.Calendar(calendarEl, {
+{% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'timeGridWeek',
-        initialDate: '{{ hoje|date:"Y-m-d" }}',
-        events: {
-          url: '{% url "eventos_json" %}',
-          method: 'GET',
-          failure: function() {
-            alert('Erro ao carregar eventos!');
-          }
-        },
+        hiddenDays: [0,6], // Esconde domingo (0) e sábado (6)
+        events: "{% url 'agenda:eventos_json' %}",
         locale: 'pt-br',
         businessHours: {
-          daysOfWeek: [1, 2, 3, 4, 5, 6], // Segunda a sábado
-          startTime: '07:00',
-          endTime: '19:00',
+            daysOfWeek: [1, 2, 3, 4, 5], // Segunda a sexta
+            startTime: '07:00',
+            endTime: '19:00',
         },
         slotMinTime: '07:00:00',
         slotMaxTime: '19:00:00',
-        hiddenDays: [0], // Esconde domingos
         eventDidMount: function(info) {
           var tooltip = document.createElement('div');
           var props = info.event.extendedProps;
-          var tooltipContent = '<strong>' + props.fornecedor + '</strong>';
+          var tooltipContent = '';
           
-          if (props.compareceu) {
-            tooltipContent += '<br>' + props.status_pontualidade;
-            if (props.hora_entrada_real) {
-              tooltipContent += '<br>Chegou às: ' + props.hora_entrada_real;
-            }
-            if (props.observacoes) {
-              tooltipContent += '<br>Obs: ' + props.observacoes;
-            }
+          if (props.tipo === 'representante') {
+            tooltipContent = '<strong>👤 ' + props.nome_representante + '</strong>';
+            tooltipContent += '<br><strong>Fornecedor/Marca:</strong> ' + props.fornecedor_marca;
+            tooltipContent += '<br><strong>Comprador:</strong> ' + props.comprador_responsavel;
           } else {
-            tooltipContent += '<br><span style="color: #ffc107;">Pendente</span>';
+            tooltipContent = '<strong>📦 ' + props.fornecedor + '</strong>';
+          }
+          
+          if (props.status_pontualidade) {
+            tooltipContent += '<br><strong>Status:</strong> ' + props.status_pontualidade;
+          }
+          
+          if (props.hora_entrada_real) {
+            tooltipContent += '<br><strong>Chegou às:</strong> ' + props.hora_entrada_real;
+          }
+          
+          if (props.observacoes) {
+            tooltipContent += '<br><strong>Obs:</strong> ' + props.observacoes;
           }
           
           tooltip.innerHTML = tooltipContent;
-          tooltip.style.position = 'absolute';
-          tooltip.style.background = '#333';
-          tooltip.style.color = '#fff';
-          tooltip.style.padding = '8px 12px';
-          tooltip.style.borderRadius = '6px';
-          tooltip.style.fontSize = '12px';
-          tooltip.style.display = 'none';
-          tooltip.style.zIndex = 1000;
-          tooltip.style.maxWidth = '250px';
-          tooltip.style.lineHeight = '1.4';
-          document.body.appendChild(tooltip);
-
-          info.el.addEventListener('mouseenter', function(e) {
-            tooltip.style.display = 'block';
-            tooltip.style.left = e.pageX + 10 + 'px';
-            tooltip.style.top = e.pageY + 10 + 'px';
-          });
-          info.el.addEventListener('mousemove', function(e) {
-            tooltip.style.left = e.pageX + 10 + 'px';
-            tooltip.style.top = e.pageY + 10 + 'px';
-          });
-          info.el.addEventListener('mouseleave', function() {
+            tooltip.style.position = 'absolute';
+            tooltip.style.background = '#333';
+            tooltip.style.color = '#fff';
+            tooltip.style.padding = '8px 12px';
+            tooltip.style.borderRadius = '6px';
+            tooltip.style.fontSize = '12px';
             tooltip.style.display = 'none';
-          });
+            tooltip.style.zIndex = 1000;
+            tooltip.style.maxWidth = '250px';
+            tooltip.style.lineHeight = '1.4';
+            document.body.appendChild(tooltip);
+
+            info.el.addEventListener('mouseenter', function(e) {
+                tooltip.style.display = 'block';
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY + 10 + 'px';
+            });
+            info.el.addEventListener('mousemove', function(e) {
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY + 10 + 'px';
+            });
+            info.el.addEventListener('mouseleave', function() {
+                tooltip.style.display = 'none';
+            });
         }
-      });
-      calendar.render();
+    });
+    calendar.render();
 
-      // Variáveis para controle de atualizações
-      var ultimoTotalAgendamentos = 0;
-      
+    // Variáveis para controle de atualizações
+    var ultimoTotalAgendamentos = 0;
+    
+    // Função para atualizar status
+    function atualizarStatus() {
+        fetch('{% url "agenda:verificar_atualizacoes" %}')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-agendamentos').textContent = data.total_agendamentos;
+                
+                // Verifica se houve mudança no total de agendamentos
+                if (ultimoTotalAgendamentos > 0 && data.total_agendamentos > ultimoTotalAgendamentos) {
+                    mostrarNotificacao();
+                }
+                
+                ultimoTotalAgendamentos = data.total_agendamentos;
+                
+                document.getElementById('status').textContent = 'Ativo';
+                document.getElementById('status').style.color = '#28a745';
+            })
+            .catch(error => {
+                console.error('Erro ao verificar status:', error);
+                document.getElementById('status').textContent = 'Erro de conexão';
+                document.getElementById('status').style.color = '#dc3545';
+            });
+    }
 
-      // Função para atualizar status
-      function atualizarStatus() {
-        fetch('{% url "verificar_atualizacoes" %}')
-          .then(response => response.json())
-          .then(data => {
-            document.getElementById('total-agendamentos').textContent = data.total_agendamentos;
-            
-            // Verifica se houve mudança no total de agendamentos
-            if (ultimoTotalAgendamentos > 0 && data.total_agendamentos > ultimoTotalAgendamentos) {
-              mostrarNotificacao();
-            }
-            
-            ultimoTotalAgendamentos = data.total_agendamentos;
-            
-            document.getElementById('status').textContent = 'Ativo';
-            document.getElementById('status').style.color = '#28a745';
-          })
-          .catch(error => {
-            console.error('Erro ao verificar status:', error);
-            document.getElementById('status').textContent = 'Erro de conexão';
-            document.getElementById('status').style.color = '#dc3545';
-          });
-      }
-
-      // Função para mostrar notificação
-      function mostrarNotificacao() {
+    // Função para mostrar notificação
+    function mostrarNotificacao() {
         var notification = document.getElementById('notification');
         notification.style.display = 'block';
         
         // Esconde a notificação após 5 segundos
         setTimeout(function() {
-          notification.style.display = 'none';
+            notification.style.display = 'none';
         }, 5000);
-      }
+    }
 
-      // Atualiza status imediatamente
-      atualizarStatus();
+    // Atualiza status imediatamente
+    atualizarStatus();
 
-      // Atualiza status e eventos a cada 3 minutos
-      setInterval(function() {
+    // Atualiza status e eventos a cada 3 minutos
+    setInterval(function() {
         atualizarStatus();
         calendar.refetchEvents();
-      }, 180000);
+    }, 180000);
 
-      // Atualiza status a cada 30 segundos para feedback mais responsivo
-      setInterval(function() {
-        atualizarStatus();
-      }, 30000);
+    // Atualiza status a cada 30 segundos para feedback mais responsivo
+    setInterval(function() {
+      atualizarStatus();
+    }, 30000);
+    
+    // Configurar data padrão para hoje
+    document.getElementById('data_agendada').value = new Date().toISOString().split('T')[0];
+    
+    // Submeter formulário de agendamento de representante
+    document.getElementById('formAgendamentoRepresentante').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const data = {
+        nome_representante: formData.get('nome_representante'),
+        fornecedor_marca: formData.get('fornecedor_marca'),
+        data_agendada: formData.get('data_agendada'),
+        hora_agendada: formData.get('hora_agendada'),
+        comprador_responsavel: formData.get('comprador_responsavel'),
+        observacoes: formData.get('observacoes')
+      };
+      
+      fetch('{% url "agenda:criar_agendamento_representante" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Fechar modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById('modalAgendamentoRepresentante'));
+          modal.hide();
+          
+          // Limpar formulário
+          document.getElementById('formAgendamentoRepresentante').reset();
+          
+          // Recarregar calendário
+          calendar.refetchEvents();
+          
+          // Mostrar notificação
+          mostrarNotificacao();
+        } else {
+          alert('Erro: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao criar agendamento');
+      });
     });
-  </script>
-</body>
-</html> 
+    
+    // Função para obter CSRF token
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  });
+</script>
+{% endblock %}
